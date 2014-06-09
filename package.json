@@ -1,0 +1,33 @@
+{
+    "name": "dom-tool",
+    "homepage": "https://github.com/khrome/dom-tool",
+    "version": "0.0.1-alpha",
+    "main": "tool.js",
+    "description": "Strange voodoo for nodes",
+    "keywords": [
+        "DOM"
+    ],
+    "author": "Abbey Hawk Sparrow <@khrome> (http://patternweaver.com)",
+    "contributors": [],
+    "bugs": {
+        "url": "https://github.com/khrome/dom-tool/issues"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/khrome/dom-tool.git"
+    },
+    "dependencies": {
+    },
+    "devDependencies": {
+        "mocha": "*",
+        "chai": "*",
+        "jsdom" : "*"
+    },
+    "optionalDependencies": {
+        "handlebars" : "*"
+    },
+    "engines": {
+        "node": "*"
+    }
+}
