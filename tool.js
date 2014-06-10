@@ -300,7 +300,7 @@
             var open = Array.isArray(options.sentinel)?options.sentinel[0]:options.sentinel;
             var close = Array.isArray(options.sentinel)?options.sentinel[1]:options.sentinel;
             traverseDOM(dom, {'comment':function(node, replace){
-                console.log('###########', node.outerHTML );
+                //console.log('###########', node.outerHTML );
                 var text = (tool.fragment(node).html() ||node.innerHTML || node.wholeText || node.data);
                 var matches = text.match(open);
                 if(matches){
