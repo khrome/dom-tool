@@ -299,16 +299,29 @@
             var index = options.registry || {};
             var open = Array.isArray(options.sentinel)?options.sentinel[0]:options.sentinel;
             var close = Array.isArray(options.sentinel)?options.sentinel[1]:options.sentinel;
+            var fragment = tool.fragment(dom);
             traverseDOM(dom, {'comment':function(node, replace){
-                //console.log('###########', node.outerHTML );
                 var text = (tool.fragment(node).html() ||node.innerHTML || node.wholeText || node.data);
+                console.log('###########', text );
                 var matches = text.match(open);
                 if(matches){
                     var marker = text;
                     var element = tool.dom('<span></span>')[0];
                     var container = node.parentNode;
-                    if(container && container.nodeType != 11)
-                        container.replaceChild(element, node);
+                    if(container.nodeType == 11) console.log('C', !!container, container.children);
+                    if(container){
+                        if(container.nodeType == 11){
+                            var index = Array.prototype.indexOf.call(container.childNodes, node);
+                            if(index != -1){
+                                container.insertBefore(node.nextSibling, element);
+                                container.removeChild(node);
+                            }
+                        }else{
+                            container.replaceChild(element, node);
+                        }
+                    }
+                    // console.log('$$$', dom);
+                    if(container.nodeType == 11)console.log('D', !!container, container.innerHTML || node.wholeText || node.data, container.id);
                     var id = text.substring(open.length, text.length - close.length);
                     var action;
                     switch(id[0]){
@@ -371,7 +384,6 @@
                     }
                 })
             };
-            var fragment = tool.fragment(dom);
             //console.log('vklvklv',  index);
             fragment.find('*').add(fragment).filter(filterFn);
             callback(index);
