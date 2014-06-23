@@ -242,7 +242,6 @@
                 if(index != -1) root.splice(index, 1, replacement);
             }
             root.forEach(function(node){
-                console.log('@@@', node.nodeType);
                 if(nodeMap[node.nodeType]) nodeMap[node.nodeType](node, replace);
                 traverseDOM(node, nodeMap);
             });
@@ -261,6 +260,20 @@
         if( !(nodea && nodeb)) throw new Error('node not a child of passed dom root');
         return dom.children.slice(start, stop);
     }
+    
+    function exchangeTextNodeChildOfFragmentForElement(textNode, element){
+        var fragment = textNode.parentNode;
+        var result = tool.fragment('');
+        var len = textNode.parentNode.childNodes.length;
+        var children = Array.prototype.slice.call(textNode.parentNode.childNodes);
+        for(var lcv = 0; lcv < len; lcv++){
+            var node = children[lcv];
+            if(node === textNode){
+                result.appendChild(element);
+            }else result.appendChild(node);
+        }
+        return result;
+    };
     
     var attrDebounces = {};
     
@@ -295,33 +308,32 @@
         uniqueID : function(){
             return Math.floor( Math.random() * 100000000 )+'';
         },
+        setup : function(){
+            if(tool.jQuery && !tool.select) tool.select = tool.jQuery;
+            if(tool.jQuery && !tool.dom) tool.dom = tool.jQuery.parseHTML;
+            
+            if(tool.window && !tool.document) tool.document = tool.window.document;
+            if(tool.window && !tool.fragment) tool.fragment = function(text){
+                return tool.window.document.createDocumentFragment(text);
+            }
+            if(tool.window && !tool.element) tool.element = function(tagName){
+                return tool.window.document.createElement(tagName);
+            };
+            delete tool.setup;
+        },
         live : function(options, dom, callback){
+            if(tool.setup) tool.setup();
             var index = options.registry || {};
             var open = Array.isArray(options.sentinel)?options.sentinel[0]:options.sentinel;
             var close = Array.isArray(options.sentinel)?options.sentinel[1]:options.sentinel;
-            var fragment = tool.fragment(dom);
+            var fragment = dom;
             traverseDOM(dom, {'comment':function(node, replace){
-                var text = (tool.fragment(node).html() ||node.innerHTML || node.wholeText || node.data);
-                console.log('###########', text );
+                var text = (tool.select(node).html() || node.innerHTML || node.wholeText || node.data);
                 var matches = text.match(open);
                 if(matches){
                     var marker = text;
-                    var element = tool.dom('<span></span>')[0];
+                    var element = tool.element('span');
                     var container = node.parentNode;
-                    if(container.nodeType == 11) console.log('C', !!container, container.children);
-                    if(container){
-                        if(container.nodeType == 11){
-                            var index = Array.prototype.indexOf.call(container.childNodes, node);
-                            if(index != -1){
-                                container.insertBefore(node.nextSibling, element);
-                                container.removeChild(node);
-                            }
-                        }else{
-                            container.replaceChild(element, node);
-                        }
-                    }
-                    // console.log('$$$', dom);
-                    if(container.nodeType == 11)console.log('D', !!container, container.innerHTML || node.wholeText || node.data, container.id);
                     var id = text.substring(open.length, text.length - close.length);
                     var action;
                     switch(id[0]){
@@ -354,6 +366,14 @@
                                 item.element = element;
                                 if(options.onValue) options.onValue(id, item, element);
                             };
+                            if(container){
+                                if(container.nodeType == 11){
+                                    fragment = exchangeTextNodeChildOfFragmentForElement(node, element);
+                                    //console.log('replaced with '+element.innerHTML);
+                                }else{
+                                    container.replaceChild(element, node);
+                                }
+                            }
                             break;
                             
                     }
@@ -367,7 +387,7 @@
                 }
             }});
             //console.log('[djvfjkfvj]');
-            var filterFn = function(index, item){
+            /*var filterFn = function(index, item){
                 if(item && item.attributes) Array.prototype.forEach.call(item.attributes, function(attr, key){
                     if(attr.value.match('<!--'+open) != -1){
                         var id = item.id ||(item.id = tool.uniqueID());
@@ -380,13 +400,53 @@
                                 //if(attrDebounces)
                             },
                             emitter : emitter
-                        };*/
+                        };*//*
                     }
                 })
             };
-            //console.log('vklvklv',  index);
-            fragment.find('*').add(fragment).filter(filterFn);
-            callback(index);
+            if(!fragment.find) fragment = tool.select(fragment); //make sure we're in the context of a selector
+            fragment.find('*').add(fragment).filter(filterFn);*/
+            function attrs(node){
+                var attributes = node.attributes;
+                if(!attributes.length) return '';
+                var result = ' ';
+                Object.keys(attributes).forEach(function(field){
+                    //jsdom is fucking stupid trash
+                    if(
+                        field[0] == '_' || 
+                        field == 'length' || 
+                        ( !isNaN(parseFloat(field)) && isFinite(field) )) 
+                            return;
+                    result += field+'="'+node.getAttribute(field)+'" ';
+                });
+                return result;
+            }
+            if(!fragment.html) fragment.html = function(){
+                var fragment = this;
+                if(fragment.nodeType != 11) return fragment.outerHTML || fragment.innerHTML || fragment.wholeText || fragment.data;
+                var html = '';
+                var node;
+                for(var lcv = 0; lcv < fragment.childNodes.length; lcv++){
+                    var node = fragment.childNodes[lcv];
+                    var val = node.tagName ?
+                        (
+                            node.childNodes.length ?
+                            '<'+node.tagName.toLowerCase()+attrs(node)+'>'+
+                                node.innerHTML+
+                                '</'+node.tagName.toLowerCase()+'>':
+                            '<'+node.tagName.toLowerCase()+attrs(node)+'/>'
+                        ):
+                        (
+                            fragment.childNodes[lcv].outerHTML || 
+                            fragment.childNodes[lcv].innerHTML || 
+                            fragment.childNodes[lcv].wholeText || 
+                            fragment.childNodes[lcv].data
+                        );
+                    html += val;
+                }
+                return html;
+            }
+            callback(index, fragment);
         }
     };
     return tool;
