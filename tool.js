@@ -94,6 +94,13 @@
             });
             return blocks;
         },
+        between : function(nodea, nodeb){
+            var dom = nodea.parentNode;
+            var start = dom.children.indexOf(nodea);
+            var stop = dom.children.indexOf(nodeb);
+            if( !(start !=-1 && stop !=-1)) throw new Error('node not a child of passed dom root');
+            return dom.children.slice(start, stop);
+        },
         insertBlockAt : function(sentinel, dom, block, index){
             var blocks = tool.blocks(sentinel, dom);
             dom.insertBefore(block, blocks[index]);
@@ -144,6 +151,7 @@
                             id = id.substring(1);
                             action = function(item){
                                 item.openEl =  element;
+                                if(!item.spacerEls) item.spacerEls = [];
                                 if(options.onOpenList) options.onOpenList(id, item, element);
                             };
                             break;
@@ -151,6 +159,33 @@
                             id = id.substring(1);
                             action = function(item){
                                 item.closeEl =  element;
+                                item.add = function(ob, position){
+                                    //console.log(item);
+                                    if(!index[id].makeNew) throw new Error('makeNew ƒ not found!');
+                                    if(!item.spacerEls) throw new Error('no spacers found!');
+                                    var list = item.spacerEls.slice(0);
+                                    list.shift(item.openEl);
+                                    list.push(item.closeEl);
+                                    var html = index[id].makeNew(ob, index);
+                                    var subdom = tool.dom(html);
+                                    tool.live(options, subdom);
+                                    if(position || position === 0){
+                                        container.insertBefore(list[position+1], subdom);
+                                        //container.insertBefore(list[position+1], ); //COMMENT
+                                    }else{
+                                        if(Array.isArray(subdom)) subdom.forEach(function(el){
+                                            container.appendChild(el);
+                                        })
+                                        else container.appendChild(subdom);
+                                    }
+                                }
+                                item.remove = function(position){
+                                    var list = item.spacerEls.slice(0);
+                                    list.shift(openEl);
+                                    list.push(closeEl);
+                                    var toRemove = tool.between(list[position], list[position+1]);
+                                    console.log('#nodes', toRemove.length);
+                                }
                                 if(options.onCloseList) options.onCloseList(item, element);
                                 if(options.onList) options.onList(id, item, element);
                             };
@@ -158,7 +193,6 @@
                         case '=' : 
                             id = id.substring(1);
                             action = function(item){
-                                if(!item.spacerEls) item.spacerEls = [];
                                 item.spacerEls.push(marker);
                                 if(options.onListItem) options.onListItem(id, item, element);
                             };
@@ -269,7 +303,7 @@
                 }
                 return html;
             }
-            callback(index, fragment);
+            if(callback) callback(index, fragment);
         }
     };
     return tool;
