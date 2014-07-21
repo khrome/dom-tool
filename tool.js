@@ -95,11 +95,11 @@
             return blocks;
         },
         between : function(nodea, nodeb){
-            var dom = nodea.parentNode;
-            var start = dom.children.indexOf(nodea);
-            var stop = dom.children.indexOf(nodeb);
-            if( !(start !=-1 && stop !=-1)) throw new Error('node not a child of passed dom root');
-            return dom.children.slice(start, stop);
+            var root = nodea.parentNode.childNodes;
+            var start = Array.prototype.indexOf.apply(root, [nodea]);
+            var stop = nodeb?Array.prototype.indexOf.apply(root, [nodeb]):undefined;
+            if( !(start !=-1)) throw new Error('node not a child of passed dom root');
+            return Array.prototype.slice.apply(root, [start, stop]);
         },
         insertBlockAt : function(sentinel, dom, block, index){
             var blocks = tool.blocks(sentinel, dom);
@@ -128,6 +128,9 @@
             if(tool.window && !tool.element) tool.element = function(tagName){
                 return tool.window.document.createElement(tagName);
             };
+            if(tool.window && !tool.comment) tool.comment = function(text){
+                return tool.window.document.createComment(text);
+            };
             delete tool.setup;
         },
         live : function(options, dom, callback){
@@ -150,7 +153,7 @@
                         case '+' : 
                             id = id.substring(1);
                             action = function(item){
-                                item.openEl =  element;
+                                item.openEl =  node;
                                 if(!item.spacerEls) item.spacerEls = [];
                                 if(options.onOpenList) options.onOpenList(id, item, element);
                             };
@@ -158,9 +161,8 @@
                         case '-' : 
                             id = id.substring(1);
                             action = function(item){
-                                item.closeEl =  element;
+                                item.closeEl =  node;
                                 item.add = function(ob, position){
-                                    //console.log(item);
                                     if(!index[id].makeNew) throw new Error('makeNew ƒ not found!');
                                     if(!item.spacerEls) throw new Error('no spacers found!');
                                     var list = item.spacerEls.slice(0);
@@ -169,31 +171,39 @@
                                     var html = index[id].makeNew(ob, index);
                                     var subdom = tool.dom(html);
                                     tool.live(options, subdom);
+                                    var item_marker = /^\<\!--<<<<=([0-9]+):([0-9]+)>>>>-->/.exec(html);
+                                    if(item_marker && subdom[0].nodeValue == item_marker[0].substring(4, item_marker[0].length-3)){
+                                        subdom[0].itemId = item_marker[2];
+                                    }
                                     if(position || position === 0){
                                         container.insertBefore(list[position+1], subdom);
-                                        //container.insertBefore(list[position+1], ); //COMMENT
                                     }else{
                                         if(Array.isArray(subdom)) subdom.forEach(function(el){
                                             container.appendChild(el);
                                         })
                                         else container.appendChild(subdom);
+                                        container.appendChild(item.closeEl); //move the close marker back on the end
                                     }
-                                }
+                                };
                                 item.remove = function(position){
                                     var list = item.spacerEls.slice(0);
-                                    list.shift(openEl);
-                                    list.push(closeEl);
-                                    var toRemove = tool.between(list[position], list[position+1]);
-                                    console.log('#nodes', toRemove.length);
-                                }
+                                    var toRemove = tool.between(list[position], list[position+1]||item.closeEl);
+                                    toRemove.forEach(function(node){
+                                        node.parentNode.removeChild(node);
+                                    })
+                                };
                                 if(options.onCloseList) options.onCloseList(item, element);
                                 if(options.onList) options.onList(id, item, element);
                             };
                             break;
                         case '=' : 
                             id = id.substring(1);
+                            id = id.split(':');
+                            var itemId  = id[1];
+                            id = id[0];
+                            if(itemId && !node.itemId) node.itemId = itemId;
                             action = function(item){
-                                item.spacerEls.push(marker);
+                                item.spacerEls.push(node);
                                 if(options.onListItem) options.onListItem(id, item, element);
                             };
                             break;
