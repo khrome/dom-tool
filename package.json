@@ -1,7 +1,7 @@
 {
     "name": "dom-tool",
     "homepage": "https://github.com/khrome/dom-tool",
-    "version": "0.0.3-alpha",
+    "version": "0.0.4-beta",
     "main": "tool.js",
     "description": "Strange voodoo for nodes",
     "keywords": [
