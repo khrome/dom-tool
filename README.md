@@ -1,5 +1,9 @@
 #dom-tool.js
 
+[![NPM version](https://img.shields.io/npm/v/dom-tool.svg)]()
+[![npm](https://img.shields.io/npm/dt/dom-tool.svg)]()
+[![Travis](https://img.shields.io/travis/khrome/dom-tool.svg)]()
+
 DomTool is a dom manipulation library for traversing and selecting nodes out of the DOM, it's simple to use, requires no selector libraries and works on all node types (not just elements and attrs). I use it for 2nd pass parsing of template output for dynamic binding, but it can be used for a wide variety of applications. Does not make comments mysteriously disappear from the document.
 
 ##Installation
