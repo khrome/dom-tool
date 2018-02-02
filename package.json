@@ -1,7 +1,7 @@
 {
     "name": "dom-tool",
     "homepage": "https://github.com/khrome/dom-tool",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "main": "tool.js",
     "description": "Strange voodoo for nodes",
     "keywords": [
@@ -18,16 +18,16 @@
         "url": "git://github.com/khrome/dom-tool.git"
     },
     "dependencies": {
-        "async-arrays" : "*",
-        "extended-emitter" : "*"
+        "async-arrays": "*",
+        "extended-emitter": "*"
     },
     "devDependencies": {
         "mocha": "*",
         "chai": "*",
-        "jsdom" : "*"
+        "jsdom": "*"
     },
     "optionalDependencies": {
-        "handlebars" : "*"
+        "handlebars": "*"
     },
     "engines": {
         "node": "*"

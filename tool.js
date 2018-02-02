@@ -10,8 +10,8 @@
     //enforce no globals
     var window = {};
     var document = {};
-    
-    
+
+
     function exchangeTextNodeChildOfFragmentForElement(textNode, element){
         var fragment = textNode.parentNode;
         var result = this.fragment('');
@@ -28,7 +28,7 @@
     function DomTool(){
         this.listeners = [];
     }
-    
+
     DomTool.prototype.bond = function(instance, type){
         if(!type) type = 'native';
         if(instance.$) type = 'jquery';
@@ -39,12 +39,22 @@
             return instance.document.createTextNode(data);
         };
         this.comment = function(elementInDOM, element){
-            
+
         };
+        this.renderNodelist = function(list, delimiter){
+            return Array.prototype.slice.call(list).map(function(item){
+                return item.outerHTML ||
+                    (
+                        item.reference?
+                            '<!--'+item.textContent+'-->':
+                            item.textContent //CDATA could get wierd
+                    );
+            }).join(delimiter || '')
+        }
         switch(type){
             case 'native':
                 this.replace = function(elementInDOM, element){
-                    
+
                 };
                 this.element = function(type, document){
                     return (document || instance.document).createElement(type);
@@ -53,7 +63,32 @@
                     return (document || instance.document).createTextNode(value);
                 };
                 this.select = function(selector, root){ //
-                    var res = instance.document.QuerySelector(context, root);
+                    var res;
+                    if(!root){
+                        res = instance.document.querySelector(selector, root);
+                    }else{
+                        if(root instanceof instance.Element){
+                            res = root.querySelector(selector, root);
+                        }
+                        if(root instanceof instance.NodeList){
+                            res = []
+                            Array.prototype.slice.call(root).forEach(function(el){
+                                if(el instanceof instance.Element){
+                                    if(!res){
+                                        res = el.querySelectorAll(selector);
+                                    }else{
+                                        Array.prototype.slice.call(
+                                            el.querySelectorAll(selector)
+                                        ).forEach(function(el){
+                                            res.push(el);
+                                        });
+                                    }
+                                    //res = res.concat(el.querySelectorAll(selector));
+                                }
+                            });
+                        }
+                    }
+                    //console.log('##', selector, this.renderNodelist(root))
                     if(res.length == 1) return res[0];
                     else return res;
                 };
@@ -71,11 +106,11 @@
                     //todo: handle non-text
                     return tool.window.document.createDocumentFragment(text);
                 };
-                
+
                 break;
             case 'jquery':
                 this.replace = function(elementInDOM, element){
-                    
+
                 };
                 this.element = function(type, document){
                     return (document || instance.document).createElement(type);
@@ -122,9 +157,9 @@
                 break;*/
         }
     };
-    
+
     DomTool.prototype.profile = function(root, indent){ //
-        
+
     };
     DomTool.prototype.cast = function(value, type){
         return (new Wrap(value)).as(type);
@@ -139,12 +174,12 @@
     DomTool.prototype.insertBlockAt = function(sentinel, dom, block, index){
         var blocks = this.blocks(sentinel, dom);
         dom.insertBefore(block, blocks[index]);
-        
+
     };
     DomTool.prototype.removeBlockAt = function(sentinel, dom, index){
         var blocks = this.blocks(sentinel, dom);
         dom.removeChild(blocks[index]);
-        
+
     };
     DomTool.prototype.transform = function(node, options, callback, tracer){
         //if(!tracer) throw new Error();
@@ -296,26 +331,26 @@
         });
         return blocks;
     };
-    
+
     function oneOrMany(list){
         if(list.length === 1){
             return list[0];
         }
         return list;
     }
-    
+
     var escapeRegEx = function(string) {
       return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
     };
-    
+
     function isNumeric(n) {
         return !isNaN(parseFloat(n)) && isFinite(n);
     }
-    
+
     function Wrap(value){
         this.value = value;
     }
-    
+
     Wrap.prototype.as = function(outbound){
         var type = (typeof this.value).toLowerCase();
         if(Array.isArray(this.value)) type = 'array';
@@ -324,7 +359,7 @@
         if(!cast[type][outbound]) throw new Error('Cannot cast to type: '+outbound);
         else return cast[type][outbound](this.value);
     }
-    
+
     /*var stacks = {};
     Live.uniqueStacks = function(id){
         if(!id) return stacks;
@@ -347,11 +382,11 @@
             this.stack = stack;
         }
     }
-    
+
     DomTool.Tracer.prototype.stacktrace = function(){
         return this.error+"\n"+this.stack.join("\n")+"\n";
     }
-    
+
     DomTool.Tracer.prototype.trap = function(block){
         try{
             block();
@@ -362,11 +397,11 @@
             else throw ex;
         }
     }
-    
+
     DomTool.Tracer.prototype.subtrace = function(){
         return new DomTool.Tracer(this.stack.slice(0))
     }
-    
+
     DomTool.Tracer.prototype.bond = function(error){
         if(!error) error = new Error();
         var stack = error.stack.split("\n");
@@ -380,7 +415,7 @@
         this.stack = stack;
         return this;
     }
-    
+
     /******************* TYPE CASTING *********************/
     var cast = {
         htmlcollection : {
@@ -428,7 +463,7 @@
             }
         }
     };
-    
+
     /********************* Node-Type mappings ********************/
     var nodeTypeMap = {
         ELEMENT_NODE : 1, ATTRIBUTE_NODE  : 2, TEXT_NODE : 3, CDATA_SECTION_NODE  : 4,
@@ -439,13 +474,13 @@
         comment : 8, document : 9, document_type : 10, documentType : 10,
         document_fragment : 11, documentFragment : 11, notation  : 12,
     }
-    
+
     var nodeMap; //inverted mapping
-    
+
     function nodeType(name){
         return nodeTypeMap[name]
     }
-    
+
     function nodeTypeName(value){
         if(!nodeMap){
             var transformedMap = {};
